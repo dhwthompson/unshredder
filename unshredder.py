@@ -52,6 +52,9 @@ def column_difference(left, right):
 
 
 if __name__ == '__main__':
+    
+    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+    
     if len(sys.argv) != 3:
         print('Usage: %s infile outfile' % sys.argv[0], file=sys.stderr)
         sys.exit(1)
@@ -69,10 +72,10 @@ if __name__ == '__main__':
             continue
         diffs[a, b] = column_difference(col_a, col_b)
     
-    print('Min: %d' % min(diffs.values()))
+    LOGGER.info('Min: %d' % min(diffs.values()))
     median = sorted(diffs.values())[len(diffs) // 2]
-    print('Median: %d' % median)
-    print('Max: %d' % max(diffs.values()))
+    LOGGER.info('Median: %d' % median)
+    LOGGER.info('Max: %d' % max(diffs.values()))
     
     good_matches = set([pair for pair, value in diffs.items()
                        if float(value) / median < GOOD_MATCH_THRESHOLD])
@@ -96,18 +99,18 @@ if __name__ == '__main__':
     chained_columns = set(sum(chains, ()))
     chains = chains + [(i,) for i in range(len(columns))
                        if i not in chained_columns]
-    print(chains)
+    LOGGER.debug(chains)
     best = None
     for i, permutation in enumerate(permutations(chains)):
-        print(i, end='\r')
+        if not i % 1000:
+            LOGGER.debug(i)
         cost = 0
         for (a, b) in izip(permutation, permutation[1:]):
             cost += diffs[a[-1], b[0]]
         if best is None or best[1] > cost:
             best = permutation, cost
-    print()
     
-    print(best[0])
+    LOGGER.debug(best[0])
     ordering = sum(best[0], ())
     
     image_out = Image.new(input_image.mode, input_image.size)
