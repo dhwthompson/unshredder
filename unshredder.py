@@ -8,7 +8,7 @@ from PIL import Image
 
 LOGGER = logging.getLogger(__name__)
 COLUMN_WIDTH = 32
-GOOD_MATCH_THRESHOLD = 0.4
+GOOD_MATCH_THRESHOLD = 0.5
 
 
 def get_columns(input_image):
