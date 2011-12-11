@@ -3,6 +3,8 @@ from __future__ import print_function
 import sys
 import logging
 from itertools import izip, permutations, product
+from math import factorial
+from pprint import pformat
 
 from PIL import Image
 
@@ -53,17 +55,28 @@ def column_difference(left, right):
 
 if __name__ == '__main__':
     
-    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+    from optparse import OptionParser
     
-    if len(sys.argv) != 3:
-        print('Usage: %s infile outfile' % sys.argv[0], file=sys.stderr)
+    parser = OptionParser(usage='%prog [options] infile outfile')
+    parser.add_option('-v', '--verbose', action='store_true',
+                      help='Show verbose logging')
+    
+    options, args = parser.parse_args()
+    
+    log_level = logging.DEBUG if options.verbose else logging.INFO
+    logging.basicConfig(stream=sys.stderr, level=log_level)
+    
+    if len(args) != 2:
+        parser.error('Two arguments required')
         sys.exit(1)
     
-    input_image = Image.open(sys.argv[1])
+    infile, outfile = args
+    
+    input_image = Image.open(infile)
     try:
         columns = get_columns(input_image)
     except RuntimeError as e:
-        print(e.args[0], file=sys.stderr)
+        print(infile, file=sys.stderr)
         sys.exit(1)
     
     diffs = {}
@@ -72,10 +85,11 @@ if __name__ == '__main__':
             continue
         diffs[a, b] = column_difference(col_a, col_b)
     
-    LOGGER.info('Min: %d' % min(diffs.values()))
+    LOGGER.debug(pformat(diffs))
+    LOGGER.info('Min: %f' % min(diffs.values()))
     median = sorted(diffs.values())[len(diffs) // 2]
-    LOGGER.info('Median: %d' % median)
-    LOGGER.info('Max: %d' % max(diffs.values()))
+    LOGGER.info('Median: %f' % median)
+    LOGGER.info('Max: %f' % max(diffs.values()))
     
     good_matches = set([pair for pair, value in diffs.items()
                        if float(value) / median < GOOD_MATCH_THRESHOLD])
@@ -100,6 +114,7 @@ if __name__ == '__main__':
     chains = chains + [(i,) for i in range(len(columns))
                        if i not in chained_columns]
     LOGGER.debug(chains)
+    LOGGER.debug('Number of permutations: %d' % factorial(len(chains)))
     best = None
     for i, permutation in enumerate(permutations(chains)):
         if not i % 1000:
@@ -118,4 +133,4 @@ if __name__ == '__main__':
     for i, column in enumerate(columns[x] for x in ordering):
         image_out.paste(column, (COLUMN_WIDTH * i, 0))
     
-    image_out.save(open(sys.argv[2], mode='w'))
+    image_out.save(open(outfile, mode='w'))
