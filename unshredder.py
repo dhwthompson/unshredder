@@ -91,16 +91,25 @@ if __name__ == '__main__':
     LOGGER.info('Median: %f' % median)
     LOGGER.info('Max: %f' % max(diffs.values()))
     
-    good_matches = set([pair for pair, value in diffs.items()
-                       if float(value) / median < GOOD_MATCH_THRESHOLD])
+    good_matches = [(pair, value) for pair, value in diffs.items()
+                    if float(value) / median < GOOD_MATCH_THRESHOLD]
+    
+    # Sort the matches in ascending cost order
+    good_matches.sort(key=lambda (pair, value): value)
     
     chains = []
-    while good_matches:
-        new_item = good_matches.pop()
+    for new_item, value in good_matches:
+        if any(x[-1] == new_item[-1] or x[0] == new_item[0] for x in chains):
+            LOGGER.info('Clash between existing chains %s and new item %s' %
+                        (chains, new_item))
+            # We have a clash: any further matches are suspect
+            break
+        
         before = [x for x in chains if x[-1] == new_item[0]]
         after = [x for x in chains if x[0] == new_item[-1]]
-        if len(before) > 2 or len(after) > 2:
-            raise RuntimeError('Too many obvious matches')
+        # If this weren't the case, we will have aborted on the previous loop
+        assert len(before) in (0, 1)
+        assert len(after) in (0, 1)
         if before:
             chains.remove(before[0])
             new_item = before[0][:-1] + new_item
