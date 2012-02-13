@@ -12,6 +12,9 @@ LOGGER = logging.getLogger(__name__)
 COLUMN_WIDTH = 32
 GOOD_MATCH_THRESHOLD = 0.5
 
+# The maximum number of columns we can sensibly brute-force
+COLUMN_LIMIT = 8
+
 
 def get_columns(input_image):
     image_width = input_image.size[0]
@@ -131,6 +134,20 @@ if __name__ == '__main__':
     LOGGER.debug(chains)
     total_count = factorial(len(chains))
     LOGGER.debug('Number of permutations: %d' % total_count)
+    while len(chains) > COLUMN_LIMIT:
+        LOGGER.debug('Too many chains to brute force')
+        candidate = None  # left, right, cost
+        for left, right in product(chains, chains):
+            if left == right:
+                continue
+            cost = diffs[left[-1], right[0]]
+            if candidate is None or candidate[2] > cost:
+                candidate = (left, right, cost)
+        LOGGER.debug('Joining chains %s and %s' % candidate[:2])
+        chains.remove(candidate[0])
+        chains.remove(candidate[1])
+        chains.append(candidate[0] + candidate[1])
+        
     best = None
     percentiles = [total_count // 100 * i for i in range(100)]
     for i, permutation in enumerate(permutations(chains)):
