@@ -10,7 +10,6 @@ from PIL import Image
 
 LOGGER = logging.getLogger(__name__)
 COLUMN_WIDTH = 32
-GOOD_MATCH_THRESHOLD = 0.5
 
 # The maximum number of columns we can sensibly brute-force
 COLUMN_LIMIT = 8
@@ -94,29 +93,33 @@ if __name__ == '__main__':
     LOGGER.info('Median: %f' % median)
     LOGGER.info('Max: %f' % max(diffs.values()))
     
-    good_matches = [(pair, value) for pair, value in diffs.items()
-                    if float(value) / median < GOOD_MATCH_THRESHOLD]
+    matches = diffs.items()
     
     # Sort the matches in ascending cost order
-    good_matches.sort(key=lambda (pair, value): value)
+    matches.sort(key=lambda (pair, value): value)
     
     chains = []
-    for new_item, value in good_matches:
+    for new_item, value in matches:
+        chained_columns = sum(chains, ())
+        # The final number of chains we'll have to piece together
+        unchained_columns = [(i,) for i in range(len(columns))
+                             if i not in chained_columns]
+        if len(chains) + len(unchained_columns) <= COLUMN_LIMIT:
+            # We have few enough options left that we can brute-force them
+            chains += unchained_columns
+            LOGGER.debug('Proceeding to brute force')
+            break
+        
         # If the new pair shares columns with an existing chain, and they're
         # not in a position to join together, discard this match
         if any(new_item[0] in c[:-1] or new_item[1] in c[1:] for c in chains):
             LOGGER.info('Match %s includes already used '
                         'column: skipping' % (new_item,))
             continue
-        if any(x[-1] == new_item[-1] or x[0] == new_item[0] for x in chains):
-            LOGGER.info('Clash between existing chains %s and new item %s' %
-                        (chains, new_item))
-            # We have a clash: any further matches are suspect
-            break
         
         before = [x for x in chains if x[-1] == new_item[0]]
         after = [x for x in chains if x[0] == new_item[-1]]
-        # If this weren't the case, we will have aborted on the previous loop
+        # If this weren't the case, the previous loop would have continued
         assert len(before) in (0, 1)
         assert len(after) in (0, 1)
         if before:
@@ -127,10 +130,6 @@ if __name__ == '__main__':
             new_item = new_item + after[0][1:]
         chains.append(new_item)
     
-    # Fill in any columns that aren't covered
-    chained_columns = set(sum(chains, ()))
-    chains = chains + [(i,) for i in range(len(columns))
-                       if i not in chained_columns]
     LOGGER.debug(chains)
     total_count = factorial(len(chains))
     LOGGER.debug('Number of permutations: %d' % total_count)
