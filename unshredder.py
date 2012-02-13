@@ -78,7 +78,7 @@ if __name__ == '__main__':
     try:
         columns = get_columns(input_image)
     except RuntimeError as e:
-        print(infile, file=sys.stderr)
+        LOGGER.critical('Error reading file %s' % infile, exc_info=True)
         sys.exit(1)
     
     diffs = {}
