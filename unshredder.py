@@ -129,11 +129,13 @@ if __name__ == '__main__':
     chains = chains + [(i,) for i in range(len(columns))
                        if i not in chained_columns]
     LOGGER.debug(chains)
-    LOGGER.debug('Number of permutations: %d' % factorial(len(chains)))
+    total_count = factorial(len(chains))
+    LOGGER.debug('Number of permutations: %d' % total_count)
     best = None
+    percentiles = [total_count // 100 * i for i in range(100)]
     for i, permutation in enumerate(permutations(chains)):
-        if not i % 1000:
-            LOGGER.debug(i)
+        if i in percentiles:
+            LOGGER.debug('%d%% complete' % percentiles.index(i))
         cost = 0
         for (a, b) in izip(permutation, permutation[1:]):
             cost += diffs[a[-1], b[0]]
