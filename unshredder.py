@@ -11,6 +11,8 @@ from PIL import Image
 LOGGER = logging.getLogger(__name__)
 COLUMN_WIDTH = 32
 
+DIFFERENCE_LIMIT = 100  # Cap the difference here, to avoid skewing the values
+
 # The maximum number of columns we can sensibly brute-force
 COLUMN_LIMIT = 8
 
@@ -49,8 +51,9 @@ def column_difference(left, right):
     for i, left_pixel in enumerate(left_slice):
         # Pixel data objects don't support slicing, so have to do it this way
         pixel_range = range(max(0, i - 1), min(len(right_slice), i + 2))
-        differences.append(min(pixel_difference(left_pixel, right_slice[r])
-                               for r in pixel_range))
+        range_diffs = [pixel_difference(left_pixel, right_slice[r])
+                       for r in pixel_range]
+        differences.append(min(range_diffs + [DIFFERENCE_LIMIT]))
     
     return sum(differences)
 
