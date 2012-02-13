@@ -130,6 +130,11 @@ if __name__ == '__main__':
             new_item = new_item + after[0][1:]
         chains.append(new_item)
     
+    # Quick sanity check
+    if sorted(sum(chains, ())) != range(len(columns)):
+        LOGGER.critical('Bad chains: %s' % chains)
+        sys.exit(1)
+    
     LOGGER.debug(chains)
     total_count = factorial(len(chains))
     LOGGER.debug('Number of permutations: %d' % total_count)
