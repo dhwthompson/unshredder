@@ -99,6 +99,12 @@ if __name__ == '__main__':
     
     chains = []
     for new_item, value in good_matches:
+        # If the new pair shares columns with an existing chain, and they're
+        # not in a position to join together, discard this match
+        if any(new_item[0] in c[:-1] or new_item[1] in c[1:] for c in chains):
+            LOGGER.info('Match %s includes already used '
+                        'column: skipping' % (new_item,))
+            continue
         if any(x[-1] == new_item[-1] or x[0] == new_item[0] for x in chains):
             LOGGER.info('Clash between existing chains %s and new item %s' %
                         (chains, new_item))
